@@ -6,13 +6,17 @@
 class VersionUtils {
   VersionUtils._();
 
-  static final RegExp _versionPattern = RegExp(r'(\d+(?:\.\d+)*)');
+  /// A dotted version (`8.1.573`) is always preferred over a lone number, so
+  /// `app-arm64-v8a-1.4.2` resolves to `1.4.2` and not to `8`.
+  static final RegExp _dottedPattern = RegExp(r'\d+\.\d+(?:\.\d+)*');
+  static final RegExp _integerPattern = RegExp(r'\d+');
 
   /// Extracts the numeric core of [value] (`v1.2.3+4` -> `1.2.3`).
   static String? normalize(String? value) {
     if (value == null) return null;
-    final match = _versionPattern.firstMatch(value);
-    return match?.group(1);
+    final dotted = _dottedPattern.firstMatch(value);
+    if (dotted != null) return dotted.group(0);
+    return _integerPattern.firstMatch(value)?.group(0);
   }
 
   /// Returns the build number of `1.2.3+42`, or null when absent.

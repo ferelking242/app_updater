@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.0.1
+
+### Fixes
+
+- **Build numbers break version ties**: `AppUpdateController` now compares the
+  published build number when the version names are equal, so a rebuild of the
+  same version (`8.1.573` code `574` vs `573`) is offered instead of ignored.
+- **Dotted versions win over lone numbers**: `VersionUtils.normalize` prefers
+  `1.4.2` in `app-arm64-v8a-1.4.2` instead of returning `8`.
+- **Releases are picked by highest version**: a recent release without an
+  asset for the platform no longer hides an older usable one.
+
+### Docs
+
+- New `docs/CI_INTEGRATION.md#5-version-comparison` section with the exact
+  comparison rules and the CI step that publishes the build manifest.
+
 ## 3.0.0
 
 ### New Features

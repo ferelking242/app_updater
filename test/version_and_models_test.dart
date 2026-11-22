@@ -10,6 +10,16 @@ void main() {
       expect(VersionUtils.buildNumber('1.2.3+42'), 42);
     });
 
+    test('prefers a dotted version over a lone number in the name', () {
+      expect(
+        VersionUtils.normalize('Watchtower-8.1.573-b573-arm64-release'),
+        '8.1.573',
+      );
+      expect(VersionUtils.normalize('app-arm64-v8a-1.4.2'), '1.4.2');
+      expect(VersionUtils.normalize('android-latest'), isNull);
+      expect(VersionUtils.normalize('build-42'), '42');
+    });
+
     test('compares numerically, not lexicographically', () {
       expect(VersionUtils.isNewer('1.9.0', '1.10.0'), isTrue);
       expect(VersionUtils.isNewer('1.10.0', '1.9.0'), isFalse);

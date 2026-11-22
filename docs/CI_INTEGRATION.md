@@ -235,7 +235,99 @@ not hide the others.
 
 ---
 
+## 5. Version comparison
+
+The app must never install an older build, and must not miss a rebuild that
+keeps the same version name. Two numbers are compared:
+
+| Value | Where it comes from |
+| --- | --- |
+| installed version | `PackageInfo.version` (`versionName`, e.g. `8.1.573`) |
+| installed build number | `PackageInfo.buildNumber` (`versionCode`, e.g. `573`) |
+| published version | `app-update.json`, else artifact name, else run title |
+| published build number | `buildNumber` in the manifest, else the workflow `run_number` |
+
+Rules applied by `AppUpdateController`:
+
+1. version names are compared numerically, part by part (`8.1.9` < `8.1.10`);
+2. a `v` prefix, `+build` metadata and `-beta` suffixes never change the
+   result (`v8.1.573` == `8.1.573+573` == `8.1.573-beta.1`);
+3. when both names are equal, the **build number decides**, so a rebuild of the
+   same version is still offered (`8.1.573` build `574` > build `573`);
+4. a release without any asset for the platform is skipped instead of hiding
+   an older usable release.
+
+This is why the manifest is written by CI and uploaded with the build: the
+version then comes from the build itself, not from a guessed file name.
+
+### Complete GitHub Actions example
+
+Place this right after the step that uploads the build artifact, so the app
+learns about the build as soon as it is green:
+
+```yaml
+      - name: Write app-update.json manifest
+        env:
+          VERSION: ${{ steps.ver.outputs.name }}
+          BUILD_NUMBER: ${{ steps.ver.outputs.code }}
+          SHA256: ${{ steps.checksum.outputs.sha256 }}
+          SIZE: ${{ steps.checksum.outputs.size }}
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os
+          manifest = {
+              "version": os.environ["VERSION"],
+              "buildNumber": int(os.environ["BUILD_NUMBER"]),
+              "platform": "android",
+              "channel": "stable",
+              "abi": "arm64-v8a",
+              "sha256": os.environ["SHA256"],
+              "size": int(os.environ["SIZE"]),
+              "publishedAt": datetime.datetime.now(
+                  datetime.timezone.utc
+              ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+          }
+          with open("app-update.json", "w") as handle:
+              json.dump(manifest, handle, indent=2)
+          PY
+
+      - name: Notify app_updater
+        env:
+          APP_UPDATER_URL: ${{ vars.APP_UPDATER_URL }}
+          APP_UPDATER_TOKEN: ${{ secrets.APP_UPDATER_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE="${APP_UPDATER_URL%/}"
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          AUTH=()
+          [ -n "${APP_UPDATER_TOKEN:-}" ] && \
+            AUTH=(-H "authorization: Bearer ${APP_UPDATER_TOKEN}")
+          RESPONSE=$(curl -fsS -X POST "${BASE}/v1/apps/my-app/builds" \
+            -H 'content-type: application/json' "${AUTH[@]}" \
+            --data-binary @app-update.json)
+          UPLOAD_URL=$(printf '%s' "${RESPONSE}" | \
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["uploadUrl"])')
+          curl -fsS -X PUT "${BASE}${UPLOAD_URL}" \
+            -H 'content-type: application/octet-stream' \
+            -H "x-file-name: $(basename "$APK")" "${AUTH[@]}" \
+            --data-binary "@${APK}"
+```
+
+`APP_UPDATER_URL` is a repository variable (`https://updates.example.com`).
+When it is not set, skip the step: the app still finds the build through the
+GitHub artifact or the release.
+
+Pass the same URL to the build so the app knows where to look:
+
+```yaml
+      - run: flutter build apk --release \
+          --dart-define=APP_UPDATER_URL=${{ vars.APP_UPDATER_URL }}
+```
+
+---
+
 ## Troubleshooting
+
 
 | Symptom | Cause | Fix |
 |---|---|---|

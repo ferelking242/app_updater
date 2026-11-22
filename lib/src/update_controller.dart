@@ -187,10 +187,12 @@ class AppUpdateController {
     this.preferencesPrefix = 'app_updater',
     Directory? workDir,
     Future<String> Function()? currentVersionProvider,
+    Future<int?> Function()? currentBuildNumberProvider,
   })  : _notifier = notifier,
         _installer = installer,
         _workDir = workDir,
-        _currentVersionProvider = currentVersionProvider;
+        _currentVersionProvider = currentVersionProvider,
+        _currentBuildNumberProvider = currentBuildNumberProvider;
 
   final UpdateSource source;
   final AutoUpdateOptions options;
@@ -199,6 +201,7 @@ class AppUpdateController {
   final UpdateInstaller? _installer;
   final Directory? _workDir;
   final Future<String> Function()? _currentVersionProvider;
+  final Future<int?> Function()? _currentBuildNumberProvider;
 
   final StreamController<UpdateState> _states =
       StreamController<UpdateState>.broadcast();
@@ -217,6 +220,15 @@ class AppUpdateController {
     if (_currentVersionProvider != null) return _currentVersionProvider();
     final info = await PackageInfo.fromPlatform();
     return info.version;
+  }
+
+  /// Installed build number (`versionCode`), used to break version ties.
+  Future<int?> currentBuildNumber() async {
+    if (_currentBuildNumberProvider != null) {
+      return _currentBuildNumberProvider();
+    }
+    final info = await PackageInfo.fromPlatform();
+    return int.tryParse(info.buildNumber);
   }
 
   /// True when the user enabled auto-update.
@@ -273,7 +285,7 @@ class AppUpdateController {
         );
       }
 
-      final available = VersionUtils.isNewer(current, candidate.version);
+      final available = await _isUpdateAvailable(current, candidate);
       final info = _toUpdateInfo(current, candidate, available);
       if (!available) {
         return _emit(
@@ -419,6 +431,24 @@ class AppUpdateController {
   Future<void> dispose() async {
     stopPeriodic();
     await _states.close();
+  }
+
+  /// Compares the installed version with [candidate].
+  ///
+  /// The version name wins; when both names are equal the published build
+  /// number (CI run number) decides, so a rebuild of the same version is still
+  /// offered instead of being silently ignored.
+  Future<bool> _isUpdateAvailable(
+    String current,
+    UpdateCandidate candidate,
+  ) async {
+    final comparison = VersionUtils.compare(current, candidate.version);
+    if (comparison != 0) return comparison < 0;
+
+    final published = candidate.buildNumber;
+    if (published == null) return false;
+    final installed = await currentBuildNumber();
+    return installed != null && published > installed;
   }
 
   UpdateState _emit(UpdateState state) {

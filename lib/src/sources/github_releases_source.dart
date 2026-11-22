@@ -48,6 +48,10 @@ class GitHubReleasesSource extends UpdateSource {
       final releases = jsonDecode(response.body);
       if (releases is! List) return null;
 
+      // GitHub returns releases newest first, but a recent release may ship
+      // no asset for this platform. Keep the highest version instead of the
+      // first one so an asset-less release never hides an older usable build.
+      UpdateCandidate? best;
       for (final entry in releases.whereType<Map>()) {
         final release = entry.cast<String, dynamic>();
         if (release['draft'] == true) continue;
@@ -77,7 +81,7 @@ class GitHubReleasesSource extends UpdateSource {
             .toList(growable: false);
         if (matching.isEmpty) continue;
 
-        return UpdateCandidate(
+        final candidate = UpdateCandidate(
           version: version,
           platform: platform,
           channel: release['prerelease'] == true ? 'beta' : 'stable',
@@ -91,11 +95,15 @@ class GitHubReleasesSource extends UpdateSource {
             'tag': tag,
           },
         );
+        if (best == null ||
+            VersionUtils.compare(version, best.version) > 0) {
+          best = candidate;
+        }
       }
+      return best;
     } finally {
       if (client == null) httpClient.close();
     }
-    return null;
   }
 
   Map<String, String> _headers() => <String, String>{

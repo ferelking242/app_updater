@@ -105,6 +105,7 @@ void main() {
     UpdateInstaller? installer,
     AutoUpdateOptions options = const AutoUpdateOptions(),
     String version = '1.0.0',
+    int? buildNumber,
   }) {
     return AppUpdateController(
       source: source,
@@ -113,6 +114,7 @@ void main() {
       options: options,
       workDir: workDir,
       currentVersionProvider: () async => version,
+      currentBuildNumberProvider: () async => buildNumber,
     );
   }
 
@@ -149,6 +151,58 @@ void main() {
     final state = await controller.check();
     expect(state.phase, UpdatePhase.upToDate);
     expect(state.updateAvailable, isFalse);
+  });
+
+  test('offers a rebuild of the same version with a newer build number',
+      () async {
+    final controller = build(
+      _FakeSource(
+        const UpdateCandidate(
+          version: '1.2.0',
+          buildNumber: 42,
+          platform: UpdatePlatform.android,
+          artifacts: [
+            UpdateArtifact(
+              fileName: 'app-arm64-v8a.apk',
+              url: 'https://example.com/app.apk',
+            ),
+          ],
+        ),
+      ),
+      version: '1.2.0',
+      buildNumber: 41,
+    );
+
+    final state = await controller.check();
+
+    expect(state.phase, UpdatePhase.available);
+    expect(state.info!.updateAvailable, isTrue);
+  });
+
+  test('ignores the same version when the build number is not newer',
+      () async {
+    final controller = build(
+      _FakeSource(
+        const UpdateCandidate(
+          version: '1.2.0',
+          buildNumber: 41,
+          platform: UpdatePlatform.android,
+          artifacts: [
+            UpdateArtifact(
+              fileName: 'app-arm64-v8a.apk',
+              url: 'https://example.com/app.apk',
+            ),
+          ],
+        ),
+      ),
+      version: '1.2.0',
+      buildNumber: 41,
+    );
+
+    final state = await controller.check();
+
+    expect(state.phase, UpdatePhase.upToDate);
+    expect(state.info!.updateAvailable, isFalse);
   });
 
   test('downloads, reports progress and prepares install', () async {

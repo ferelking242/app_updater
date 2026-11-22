@@ -274,6 +274,25 @@ Pour ton application, tague le commit et laisse le workflow publier la build :
 git tag v1.4.2 && git push origin v1.4.2
 ```
 
+### Comparaison des versions, au détail près
+
+L'app compare le `versionName` / `versionCode` installé avec ce que la CI a
+publié :
+
+| Installé | Publié | Résultat |
+| --- | --- | --- |
+| `8.1.573` (code `573`) | `8.1.573` (code `573`) | à jour |
+| `8.1.573` (code `573`) | `8.1.573` (code `574`) | mise à jour (même nom, build plus récent) |
+| `8.1.573` | `8.1.574` | mise à jour |
+| `8.1.573` | `v8.1.573-beta.1` | à jour (suffixes ignorés) |
+
+Le préfixe `v`, les métadonnées `+build` et les suffixes `-beta` ne rendent
+jamais une version plus récente. Une version pointée est toujours préférée à un
+nombre isolé : `Watchtower-8.1.573-b573-arm64-release` donne `8.1.573`, pas `8`.
+Écrivez `app-update.json` dans la CI et envoyez-le avec la build : le manifeste
+prime sur toute déduction depuis le nom. Voir
+[docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md#5-version-comparison).
+
 ---
 
 ## 🎨 Ton application, ton UI
