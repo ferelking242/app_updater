@@ -58,9 +58,20 @@ class _MyHomePageState extends State<MyHomePage> {
       linuxStoreType: LinuxStoreType.snap,
 
       // GitHub Releases support
-      githubOwner: 'mantreshkhurana',
+      githubOwner: 'ferelking242',
       githubRepo: 'app_updater',
       githubIncludePrereleases: false,
+
+      // Per-app update UI: colors, logo, radius and copy
+      theme: const AppUpdaterTheme(
+        accentColor: Color(0xFF0EA5E9),
+        borderRadius: BorderRadius.all(Radius.circular(22)),
+        strings: UpdateStrings(
+          updateAvailableTitle: 'Update available',
+          updateButton: 'Install',
+          laterButton: 'Later',
+        ),
+      ),
 
       // Update frequency control - only check once per day
       checkFrequency: const Duration(days: 1),

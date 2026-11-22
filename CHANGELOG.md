@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.0.0
+
+### New Features
+
+- **GitHub Actions artifacts as an update source**: `GitHubArtifactsSource`
+  serves the file produced by a workflow, with version resolution from the
+  artifact name, the run title or the embedded `app-update.json`.
+- **Self-hosted CI feed**: `CiFeedSource` reads builds published through the new
+  `app_updater_ci` server (`POST /v1/apps/<app>/builds`, `PUT …/artifact`,
+  `GET …/latest`). Retention, SHA-256 verification and private mode included.
+- **`AppUpdateController`**: check → download → install state machine with
+  `AutoUpdateOptions`, launch checks, interval rate limiting and a state stream.
+- **Auto-update plumbing**: `UpdateNotifier` (notification with an Install
+  action) and `UpdateInstaller` (background install) interfaces, plus persisted
+  settings.
+- **Per-app update UI**: `AppUpdaterTheme` (colors, radius, logo, fonts,
+  strings) and `AppUpdaterDialogBuilder` for a completely custom widget.
+- **`CompositeUpdateSource`**: combine CI artifacts, releases and a CI feed;
+  the newest version wins and a failing source is ignored.
+- **`GitHubReleasesSource`** and `VersionUtils` for consistent version parsing.
+- **Publisher tooling**: `scripts/publish-build.sh` (any CI), a Dart CLI
+  (`ci/app_updater_ci/bin/publish.dart`) and ready-to-copy pipelines for GitHub
+  Actions, GitLab CI, CircleCI and Jenkins.
+- **Documentation** in English, French, Spanish, Portuguese and German, with
+  dedicated guides for CI integration, custom UI and auto-update.
+
+### Breaking Changes
+
+- Minimum Flutter version is now **3.27** (uses `Color.withValues`).
+- `UpdateSource` implementations must `extend` the class, not `implement` it.
+
+### Tests
+
+- 21 package tests (versioning, candidate parsing, GitHub artifacts, CI feed,
+  controller state machine, themed dialog) and 9 CI-server/publisher tests.
+
 ## 2.1.0
 
 ### New Features

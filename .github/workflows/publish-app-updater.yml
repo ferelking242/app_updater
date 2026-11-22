@@ -1,0 +1,148 @@
+name: Publish app build
+
+# Reusable workflow. Call it from any Flutter repository:
+#
+#   jobs:
+#     publish:
+#       uses: ferelking242/app_updater/.github/workflows/publish-app-updater.yml@main
+#       with:
+#         app_id: watchtower
+#         build_command: flutter build apk --release --split-per-abi
+#         artifact_glob: build/app/outputs/flutter-apk/*.apk
+#       secrets:
+#         APP_UPDATER_CI_ENDPOINT: ${{ secrets.APP_UPDATER_CI_ENDPOINT }}
+#         APP_UPDATER_CI_TOKEN: ${{ secrets.APP_UPDATER_CI_TOKEN }}
+#
+# It builds the app, publishes every produced file to the CI server, uploads
+# them as GitHub Actions artifacts (so the GitHub-artifacts source can serve
+# them without any server), and writes app-update.json next to each file.
+
+on:
+  workflow_call:
+    inputs:
+      app_id:
+        description: Application id registered on the CI server.
+        required: true
+        type: string
+      build_command:
+        description: Command building the app.
+        required: false
+        type: string
+        default: flutter build apk --release --split-per-abi
+      artifact_glob:
+        description: Files produced by build_command.
+        required: false
+        type: string
+        default: build/app/outputs/flutter-apk/*.apk
+      platform:
+        description: Target platform (android, ios, windows, linux, macos).
+        required: false
+        type: string
+        default: android
+      channel:
+        description: Release channel.
+        required: false
+        type: string
+        default: stable
+      version:
+        description: Override the version (defaults to pubspec.yaml).
+        required: false
+        type: string
+        default: ''
+      release_notes:
+        description: Release notes shown in the app.
+        required: false
+        type: string
+        default: ''
+      upload_artifact:
+        description: Upload the files as GitHub Actions artifacts.
+        required: false
+        type: boolean
+        default: true
+      flutter_version:
+        description: Flutter version to install.
+        required: false
+        type: string
+        default: stable
+    secrets:
+      APP_UPDATER_CI_ENDPOINT:
+        required: false
+      APP_UPDATER_CI_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      APP_UPDATER_CI_ENDPOINT: ${{ secrets.APP_UPDATER_CI_ENDPOINT }}
+      APP_UPDATER_CI_TOKEN: ${{ secrets.APP_UPDATER_CI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ inputs.flutter_version }}
+          cache: true
+
+      - name: Resolve version and build number
+        id: meta
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="$(sed -n 's/^version: *\([0-9][^+ ]*\).*/\1/p' pubspec.yaml | head -n1)"
+          fi
+          BUILD_NUMBER="$(sed -n 's/^version: *[^+]*+\([0-9][0-9]*\).*/\1/p' pubspec.yaml | head -n1)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=${BUILD_NUMBER:-$GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          flutter pub get
+          ${{ inputs.build_command }}
+
+      - name: Publish to the CI server
+        if: ${{ env.APP_UPDATER_CI_ENDPOINT != '' }}
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          BUILD_NUMBER: ${{ steps.meta.outputs.build_number }}
+          NOTES: ${{ inputs.release_notes }}
+          PLATFORM: ${{ inputs.platform }}
+          CHANNEL: ${{ inputs.channel }}
+          APP_ID: ${{ inputs.app_id }}
+          ARTIFACT_GLOB: ${{ inputs.artifact_glob }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o /tmp/publish-build.sh
+          chmod +x /tmp/publish-build.sh
+          for FILE in $ARTIFACT_GLOB; do
+            ABI=""
+            case "$FILE" in
+              *arm64-v8a*) ABI="arm64-v8a" ;;
+              *armeabi-v7a*) ABI="armeabi-v7a" ;;
+              *x86_64*) ABI="x86_64" ;;
+            esac
+            /tmp/publish-build.sh \
+              --endpoint "$APP_UPDATER_CI_ENDPOINT" \
+              --app "$APP_ID" \
+              --file "$FILE" \
+              --version "$VERSION" \
+              --build-number "$BUILD_NUMBER" \
+              --platform "$PLATFORM" \
+              --channel "$CHANNEL" \
+              ${ABI:+--abi "$ABI"} \
+              ${NOTES:+--notes "$NOTES"} \
+              --write-manifest
+          done
+
+      - name: Upload GitHub Actions artifacts
+        if: ${{ inputs.upload_artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app_id }}-${{ inputs.platform }}-${{ steps.meta.outputs.version }}
+          path: |
+            ${{ inputs.artifact_glob }}
+            **/app-update.json
+          if-no-files-found: error
+          retention-days: 30

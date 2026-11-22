@@ -1,0 +1,63 @@
+# Copy to .github/workflows/publish.yml of your Flutter app.
+name: Publish build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      APP_UPDATER_CI_ENDPOINT: ${{ secrets.APP_UPDATER_CI_ENDPOINT }}
+      APP_UPDATER_CI_TOKEN: ${{ secrets.APP_UPDATER_CI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+
+      - name: Publish every ABI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o /tmp/publish-build.sh
+          chmod +x /tmp/publish-build.sh
+          for FILE in build/app/outputs/flutter-apk/*.apk; do
+            ABI=""
+            case "$FILE" in
+              *arm64-v8a*) ABI="arm64-v8a" ;;
+              *armeabi-v7a*) ABI="armeabi-v7a" ;;
+              *x86_64*) ABI="x86_64" ;;
+            esac
+            /tmp/publish-build.sh \
+              --endpoint "$APP_UPDATER_CI_ENDPOINT" \
+              --app my-app \
+              --file "$FILE" \
+              --version "${GITHUB_REF_NAME#v}" \
+              --build-number "$GITHUB_RUN_NUMBER" \
+              --platform android \
+              --channel stable \
+              ${ABI:+--abi "$ABI"} \
+              --notes-file CHANGELOG.md \
+              --write-manifest
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-app-android
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/flutter-apk/app-update.json

@@ -1,0 +1,40 @@
+# Copy to .circleci/config.yml of your Flutter app.
+version: 2.1
+
+jobs:
+  build-and-publish:
+    docker:
+      - image: cimg/android:2024.10
+    steps:
+      - checkout
+      - run:
+          name: Install Flutter
+          command: |
+            git clone --depth 1 https://github.com/flutter/flutter.git -b stable "$HOME/flutter"
+            echo 'export PATH="$HOME/flutter/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Build APK
+          command: |
+            flutter pub get
+            flutter build apk --release --split-per-abi
+      - run:
+          name: Publish to app_updater
+          command: |
+            curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o /tmp/publish-build.sh
+            chmod +x /tmp/publish-build.sh
+            VERSION="$(sed -n 's/^version: *\([0-9][^+ ]*\).*/\1/p' pubspec.yaml | head -n1)"
+            for FILE in build/app/outputs/flutter-apk/*.apk; do
+              /tmp/publish-build.sh --endpoint "$APP_UPDATER_CI_ENDPOINT" \
+                --app my-app --file "$FILE" --version "$VERSION" \
+                --build-number "$CIRCLE_BUILD_NUM" --platform android
+            done
+
+workflows:
+  publish:
+    jobs:
+      - build-and-publish:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/

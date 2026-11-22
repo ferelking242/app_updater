@@ -1,0 +1,47 @@
+# No server needed: publish to GitHub Actions artifacts only, and let
+# GitHubArtifactsSource read them. Copy to .github/workflows/publish.yml.
+name: Publish build (artifact only)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+
+      - name: Write the build manifest
+        run: |
+          VERSION="$(sed -n 's/^version: *\([0-9][^+ ]*\).*/\1/p' pubspec.yaml | head -n1)"
+          for FILE in build/app/outputs/flutter-apk/*.apk; do
+            /bin/bash -c '
+              FILE="$1"; VERSION="$2"
+              curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o /tmp/p.sh
+              chmod +x /tmp/p.sh
+              /tmp/p.sh --app my-app --file "$FILE" --version "$VERSION" --write-manifest
+            ' _ "$FILE" "$VERSION"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: my-app-android-${{ github.run_number }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/flutter-apk/app-update.json
+          retention-days: 90

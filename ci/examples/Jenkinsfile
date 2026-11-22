@@ -1,0 +1,39 @@
+// Jenkins declarative pipeline for a Flutter app publishing to app_updater.
+pipeline {
+  agent any
+  environment {
+    APP_ID          = 'my-app'
+    CI_ENDPOINT     = credentials('app-updater-ci-endpoint')
+    CI_TOKEN        = credentials('app-updater-ci-token')
+  }
+  stages {
+    stage('Build') {
+      steps {
+        sh '''
+          flutter pub get
+          flutter build apk --release --split-per-abi
+        '''
+      }
+    }
+    stage('Publish') {
+      steps {
+        sh '''
+          curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o publish-build.sh
+          chmod +x publish-build.sh
+          VERSION="$(sed -n 's/^version: *\\([0-9][^+ ]*\\).*/\\1/p' pubspec.yaml | head -n1)"
+          for FILE in build/app/outputs/flutter-apk/*.apk; do
+            ABI=""
+            case "$FILE" in
+              *arm64-v8a*) ABI="arm64-v8a" ;;
+              *armeabi-v7a*) ABI="armeabi-v7a" ;;
+              *x86_64*) ABI="x86_64" ;;
+            esac
+            ./publish-build.sh --endpoint "$CI_ENDPOINT" --token "$CI_TOKEN" \
+              --app "$APP_ID" --file "$FILE" --version "$VERSION" \
+              --build-number "$BUILD_NUMBER" --platform android ${ABI:+--abi "$ABI"}
+          done
+        '''
+      }
+    }
+  }
+}

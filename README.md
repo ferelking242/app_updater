@@ -1,701 +1,397 @@
-# App Updater
+<a href="https://github.com/ferelking242/app_updater">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:0ea5e9,100:6366f1&height=220&section=header&text=app_updater&fontSize=76&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Store%20%C2%B7%20GitHub%20Releases%20%C2%B7%20CI%20artifacts%20%C2%B7%20Custom%20UI&descSize=18&descAlignY=55&descAlign=50" width="100%" alt="app_updater banner"/>
+</a>
 
-[![GitHub stars](https://img.shields.io/github/stars/mantreshkhurana/app_updater.svg?style=social)](https://github.com/mantreshkhurana/app_updater)
-[![pub package](https://img.shields.io/pub/v/app_updater.svg)](https://pub.dartlang.org/packages/app_updater)
+<div align="center">
 
-A comprehensive Flutter package to check for app updates and display platform-native dialogs. Supports iOS, Android, macOS, Windows, and Linux with adaptive UI for each platform.
+[![CI](https://github.com/ferelking242/app_updater/actions/workflows/ci.yml/badge.svg)](https://github.com/ferelking242/app_updater/actions/workflows/ci.yml)
+[![Release](https://github.com/ferelking242/app_updater/actions/workflows/release.yml/badge.svg)](https://github.com/ferelking242/app_updater/actions/workflows/release.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-3.27+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.5+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+[![Platforms](https://img.shields.io/badge/Android%20%C2%B7%20iOS%20%C2%B7%20Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-lightgrey)](#supported-platforms)
 
-| Platform | Dialog Style |
-|----------|--------------|
-| iOS | ![iOS Dialog](./screenshots/ios-screenshot.png) |
-| Android | ![Android Dialog](./screenshots/android-screenshot.png) |
-| macOS | ![macOS Dialog](./screenshots/macos-screenshot.png) |
-| Windows | ![Windows Dialog](./screenshots/windows-screenshot.png) |
-| Linux | ![Linux Dialog](./screenshots/linux-screenshot.png) |
+**English** · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt.md) · [Deutsch](README.de.md)
 
-## Features
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=0EA5E9&center=true&vCenter=true&multiline=true&repeat=true&width=720&height=100&lines=Ship+updates+from+any+CI;Artifacts%2C+releases+or+stores;Your+app%2C+your+update+UI" alt="Typing SVG" />
 
-### Core Features
+</div>
 
-- **Platform-Specific Dialogs**: Native UI for each platform (Material, Cupertino, Fluent, Adwaita)
-- **Persistent Dialogs**: Force users to update with non-dismissible dialogs
-- **Skip Version**: Let users skip specific versions
-- **Do Not Ask Again**: Remember user's preference to not show update dialogs
-- **Custom Endpoints**: Support for custom XML/JSON version endpoints
+---
 
-### New in v2.1.0
+`app_updater` is a Flutter package that answers one question: **is there a newer
+build of my app, and how do I install it?** It reads the answer from an app
+store, GitHub Releases, GitHub Actions artifacts or a self-hosted CI feed, then
+shows a native dialog — or a dialog you fully design.
 
-- **Private GitHub Repository Support**: Use `githubToken` or `githubHeaders` for private repos
+This fork adds what the original package could not do:
 
-### New in v2.0.0
+| Capability | What it means |
+|---|---|
+| **GitHub Actions artifacts** | Serve the APK/exe produced by your workflow, without publishing a release. |
+| **CI notification endpoint** | Your CI `POST`s one build; every app sees it immediately. |
+| **Auto-update** | Check on launch, download in the background, notify with an *Install* action. |
+| **Per-app UI** | Colors, radius, logo, strings, or a completely custom widget. |
+| **Verifiable downloads** | SHA-256 checks, archive extraction, `app-update.json` manifest. |
+| **Localized README** | English, French, Spanish, Portuguese and German docs. |
 
-- **Release Notes Display**: Show what's new in each update
-- **Update Frequency Control**: Only check for updates every X days
-- **Silent/Background Checking**: Check updates periodically without blocking UI
-- **Force Update by Minimum Version**: Define minimum required version to force updates
-- **Analytics/Callbacks**: Track update impressions, dismissals, and completions
-- **TestFlight Support**: Support beta updates via TestFlight on iOS
-- **GitHub Releases Support**: Check for updates from GitHub releases
-- **Firebase Remote Config**: Integrate with Firebase for remote version control
-- **Localization/i18n**: Built-in translations for dialog text
-- **Update Urgency Levels**: Critical, high, medium, low update types
-- **Changelog Fetching**: Auto-fetch and display changelogs from stores
+---
 
-### Supported Platforms
+## ✨ Features
 
-| Platform | Store | Dialog Style |
-|----------|-------|--------------|
-| iOS | App Store | Cupertino |
-| Android | Play Store | Material Design 3 |
-| macOS | Mac App Store | Cupertino |
-| Windows | Microsoft Store | Fluent Design |
-| Linux | Snap Store / Flathub | Adwaita (GNOME) |
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <b>🏪 Stores</b><br/>
+      <sub>App Store, Play Store, Microsoft Store, Snap, Flathub</sub>
+    </td>
+    <td align="center" width="25%">
+      <b>🐙 GitHub</b><br/>
+      <sub>Releases <i>and</i> Actions artifacts</sub>
+    </td>
+    <td align="center" width="25%">
+      <b>🛰️ Self-hosted feed</b><br/>
+      <sub>One POST from CI, instant delivery</sub>
+    </td>
+    <td align="center" width="25%">
+      <b>🎨 Custom UI</b><br/>
+      <sub>Theme it or replace the whole dialog</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <b>⚡ Auto-update</b><br/>
+      <sub>Launch check, background download, install action</sub>
+    </td>
+    <td align="center">
+      <b>🔐 Integrity</b><br/>
+      <sub>SHA-256, manifest, size checks</sub>
+    </td>
+    <td align="center">
+      <b>🌍 Localization</b><br/>
+      <sub>Every string overridable</sub>
+    </td>
+    <td align="center">
+      <b>🧪 Tested</b><br/>
+      <sub>Unit, widget and server tests in CI</sub>
+    </td>
+  </tr>
+</table>
 
-## Installation
+---
 
-Add `app_updater` to your `pubspec.yaml`:
+## 🏗️ Architecture
+
+```
+app_updater/
+├── lib/src/
+│   ├── version_checker.dart        ← store / release / JSON / XML checks + native dialogs
+│   ├── update_controller.dart      ← auto-update state machine (check → download → install)
+│   ├── models/                     ← UpdateCandidate, UpdateArtifact, PreparedUpdate
+│   ├── sources/                    ← GitHub artifacts, GitHub releases, CI feed, composite
+│   ├── services/artifact_downloader.dart  ← HTTP download, SHA-256, zip/tar extraction
+│   └── ui/                         ← AppUpdaterTheme + themed dialog
+│
+├── ci/app_updater_ci/              ← the CI ingest server and publisher CLI (Dart + shelf)
+│   ├── bin/server.dart             ← POST /v1/apps/<app>/builds …
+│   └── bin/publish.dart            ← dart run bin/publish.dart --file app.apk …
+│
+├── ci/examples/                    ← GitHub Actions, GitLab CI, CircleCI, Jenkins
+├── scripts/publish-build.sh        ← CI-agnostic publisher (curl + sha256sum)
+└── .github/workflows/              ← CI, reusable publish workflow, release pipeline
+```
+
+| Layer | Tech |
+|---|---|
+| Package | Flutter 3.27+, Dart 3.5+ |
+| HTTP | `http` |
+| Archives | `archive` (zip, tar, tar.gz, tar.xz) |
+| Integrity | `crypto` (SHA-256) |
+| Persistence | `shared_preferences` |
+| CI server | Dart + `shelf` + `shelf_router` |
+| CI | GitHub Actions |
+
+---
+
+## 📦 Installation
 
 ```yaml
 dependencies:
-  app_updater: ^2.1.0
+  app_updater:
+    git:
+      url: https://github.com/ferelking242/app_updater.git
+      ref: main
 ```
-
-## Quick Start
 
 ```dart
 import 'package:app_updater/app_updater.dart';
+```
 
-// Create an AppUpdater instance
-final appUpdater = AppUpdater.configure(
+## 🚀 Quick start
+
+### 1. Stores and GitHub Releases (classic)
+
+```dart
+final updater = AppUpdater.configure(
+  androidPackageName: 'com.example.app',
   iosAppId: '123456789',
-  macAppId: '987654321',
-  microsoftProductId: '9NBLGGH4NNS1',
-  snapName: 'my-app',
-  flathubAppId: 'com.example.myapp',
+  githubOwner: 'my-org',
+  githubRepo: 'my-app',
+  checkFrequency: const Duration(days: 1),
+  theme: const AppUpdaterTheme(accentColor: Color(0xFF0EA5E9)),
 );
 
-// Check for updates and show dialog
-final updateInfo = await appUpdater.checkAndShowUpdateDialog(context);
-
-if (updateInfo.updateAvailable) {
-  print('New version available: ${updateInfo.latestVersion}');
-  print('Release notes: ${updateInfo.releaseNotes}');
-}
+final info = await updater.checkAndShowUpdateDialog(context);
 ```
 
-## Usage
-
-### Basic Usage
+### 2. CI builds, with auto-update
 
 ```dart
-// Create AppUpdater with configuration
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  // androidPackageName is auto-detected!
-);
-
-// Check and show dialog if update available
-await appUpdater.checkAndShowUpdateDialog(context);
-```
-
-### All Platforms
-
-```dart
-final appUpdater = AppUpdater.configure(
-  // Mobile
-  iosAppId: '123456789',
-  androidPackageName: 'com.example.app', // Optional - auto-detected
-  // Desktop
-  macAppId: '987654321',
-  microsoftProductId: '9NBLGGH4NNS1',
-  snapName: 'my-app',
-  flathubAppId: 'com.example.myapp',
-  linuxStoreType: LinuxStoreType.snap, // or LinuxStoreType.flathub
-);
-```
-
-### Dialog Styles
-
-The package provides 5 dialog styles that match each platform's design language:
-
-```dart
-await appUpdater.showUpdateDialog(
-  context,
-  dialogStyle: UpdateDialogStyle.adaptive, // Auto-selects based on platform
-);
-
-// Or force a specific style:
-// UpdateDialogStyle.material   - Material Design 3 (Android)
-// UpdateDialogStyle.cupertino  - iOS/macOS native
-// UpdateDialogStyle.fluent     - Windows Fluent Design
-// UpdateDialogStyle.adwaita    - Linux GNOME/Adwaita
-```
-
-### Persistent (Forced) Updates
-
-For critical updates that users must install:
-
-```dart
-await appUpdater.checkAndShowUpdateDialog(
-  context,
-  isPersistent: true,  // Cannot be dismissed
-  isDismissible: false,
-  title: 'Critical Update Required',
-  message: 'Please update to continue using the app.',
-);
-```
-
-### Skip Version & Do Not Ask Again
-
-Let users control update notifications:
-
-```dart
-await appUpdater.checkAndShowUpdateDialog(
-  context,
-  showSkipVersion: true,    // Shows "Skip this version" option
-  showDoNotAskAgain: true,  // Shows "Don't remind me again" option
-);
-```
-
-### Managing Preferences
-
-```dart
-// Check if user skipped a version
-final isSkipped = await UpdatePreferences.isVersionSkipped('2.0.0');
-
-// Check if user chose "do not ask again"
-final doNotAsk = await UpdatePreferences.isDoNotAskAgain();
-
-// Reset all preferences
-await UpdatePreferences.clearAll();
-
-// Reset only skipped version
-await UpdatePreferences.clearSkippedVersion();
-
-// Get analytics data
-final impressions = await UpdatePreferences.getUpdateImpressions();
-final dismissals = await UpdatePreferences.getUpdateDismissals();
-```
-
----
-
-## New Features
-
-### Release Notes Display
-
-Show what's new in the update dialog:
-
-```dart
-await appUpdater.checkAndShowUpdateDialog(
-  context,
-  showReleaseNotes: true, // Enabled by default
-);
-
-// Release notes are automatically fetched from:
-// - App Store (iOS/macOS)
-// - Flathub (Linux)
-// - GitHub Releases
-// - Custom JSON/XML endpoints
-```
-
-### Update Frequency Control
-
-Prevent checking for updates too frequently:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  checkFrequency: Duration(days: 1), // Only check once per day
-);
-
-// Manual check respecting frequency
-final updateInfo = await appUpdater.checkForUpdate();
-
-// Force check ignoring frequency
-final updateInfo = await appUpdater.checkForUpdate(respectFrequency: false);
-```
-
-### Background/Silent Checking
-
-Check for updates in the background without blocking the UI:
-
-```dart
-// Start periodic background checking
-appUpdater.startBackgroundChecking(Duration(hours: 6));
-
-// Listen for updates
-appUpdater.updateStream.listen((updateInfo) {
-  if (updateInfo.updateAvailable) {
-    // Show notification or update badge
-    showNotification('Update available: ${updateInfo.latestVersion}');
-  }
-});
-
-// Stop background checking when done
-appUpdater.stopBackgroundChecking();
-
-// Don't forget to dispose
-@override
-void dispose() {
-  appUpdater.dispose();
-  super.dispose();
-}
-```
-
-### Force Update by Minimum Version
-
-Force updates when users are below a minimum version:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  minimumVersion: '2.0.0', // Users below this MUST update
-);
-
-// Or via custom JSON endpoint:
-// { "version": "2.5.0", "minimumVersion": "2.0.0" }
-
-// Check if force update is required
-final updateInfo = await appUpdater.checkForUpdate();
-if (updateInfo.requiresForceUpdate) {
-  // Show non-dismissible dialog
-  await appUpdater.showUpdateDialog(context, isPersistent: true);
-}
-```
-
-### Update Urgency Levels
-
-Communicate update importance to users:
-
-```dart
-// Urgency levels: low, medium, high, critical
-// Set via custom endpoints or Firebase Remote Config
-
-// Custom JSON endpoint example:
-// { "version": "2.5.0", "urgency": "critical" }
-
-// The dialog icon and color change based on urgency
-final updateInfo = await appUpdater.checkForUpdate();
-print('Urgency: ${updateInfo.urgency}'); // UpdateUrgency.critical
-```
-
-### Analytics & Callbacks
-
-Track user interactions with update dialogs:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  onAnalyticsEvent: (event) {
-    // Send to your analytics service
-    analytics.logEvent(
-      name: event.eventName,
-      parameters: event.toMap(),
-    );
-  },
-);
-
-// Available events:
-// - update_dialog_shown
-// - update_accepted
-// - update_declined
-// - update_version_skipped
-// - update_do_not_ask_again
-// - update_check_started
-// - update_check_completed
-// - update_check_failed
-// - update_store_opened
-```
-
-### GitHub Releases Support
-
-Check for updates from GitHub releases:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  githubOwner: 'mycompany',
-  githubRepo: 'myapp',
-  githubIncludePrereleases: false, // Set to true for beta builds
-);
-
-// Automatically fetches:
-// - Latest version from tag name
-// - Release notes from body
-// - Download URL from assets
-```
-
-### Private GitHub Repositories
-
-For private repos, just pass your GitHub Personal Access Token:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  githubOwner: 'mycompany',
-  githubRepo: 'private-app',
-  githubToken: 'ghp_xxxxxxxxxxxxx', // That's it!
-);
-```
-
-For GitHub Enterprise or advanced auth scenarios, use custom headers:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  githubOwner: 'mycompany',
-  githubRepo: 'private-app',
-  githubHeaders: {
-    'Authorization': 'token ghp_xxxxxxxxxxxxx',
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-  },
-);
-```
-
-> **Note:** If both `githubToken` and `githubHeaders` are provided, values in `githubHeaders` take precedence for overlapping keys (e.g., `Authorization`).
-
-### TestFlight Support (iOS)
-
-Support beta updates via TestFlight:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  testFlightEnabled: true,
-  testFlightUrl: 'https://testflight.apple.com/join/ABC123', // Optional custom URL
-);
-
-// Open TestFlight for beta testing
-await appUpdater.openTestFlight();
-```
-
-### Firebase Remote Config Integration
-
-Use Firebase Remote Config for dynamic version control:
-
-```dart
-final appUpdater = AppUpdater.configure(
-  firebaseRemoteConfigEnabled: true,
-  firebaseSettings: FirebaseRemoteConfigSettings(
-    minimumVersionKey: 'minimum_app_version',
-    latestVersionKey: 'latest_app_version',
-    updateUrlKey: 'app_update_url',
-    releaseNotesKey: 'release_notes',
-    urgencyKey: 'update_urgency',
-    mandatoryKey: 'mandatory_update',
+final controller = AppUpdateController(
+  source: CompositeUpdateSource([
+    CiFeedSource(
+      endpoint: Uri.parse('https://updates.example.com'),
+      appId: 'my-app',
+    ),
+    GitHubArtifactsSource(
+      owner: 'my-org',
+      repo: 'my-app',
+      workflow: 'publish.yml',
+    ),
+  ]),
+  notifier: MyNotificationService(),
+  installer: MyApkInstaller(),
+  options: const AutoUpdateOptions(
+    enabledByDefault: true,
+    interval: Duration(hours: 6),
+    downloadOnLaunch: true,
+    abi: 'arm64-v8a',
   ),
-  firebaseConfigFetcher: () async {
-    // Fetch from your Firebase Remote Config instance
-    await FirebaseRemoteConfig.instance.fetchAndActivate();
-    return {
-      'minimum_app_version': FirebaseRemoteConfig.instance.getString('minimum_app_version'),
-      'latest_app_version': FirebaseRemoteConfig.instance.getString('latest_app_version'),
-      'app_update_url': FirebaseRemoteConfig.instance.getString('app_update_url'),
-      'release_notes': FirebaseRemoteConfig.instance.getString('release_notes'),
-      'update_urgency': FirebaseRemoteConfig.instance.getString('update_urgency'),
-      'mandatory_update': FirebaseRemoteConfig.instance.getBool('mandatory_update'),
-    };
-  },
 );
+
+// In initState, after the first frame:
+await controller.checkOnLaunch();
+
+// In Settings > About:
+await controller.check(manual: true);
 ```
 
-### Localization / i18n
-
-Provide translations for all dialog text:
-
-```dart
-// Create localized strings
-final frenchStrings = UpdateStrings(
-  updateAvailableTitle: 'Mise à jour disponible',
-  updateAvailableMessage: 'Une nouvelle version ({latestVersion}) est disponible. Vous avez actuellement la version {currentVersion}.',
-  updateButton: 'Mettre à jour',
-  laterButton: 'Plus tard',
-  skipVersionButton: 'Ignorer cette version',
-  doNotAskAgainButton: 'Ne plus me rappeler',
-  criticalUpdateTitle: 'Mise à jour critique requise',
-  criticalUpdateMessage: 'Cette mise à jour contient des correctifs importants.',
-  releaseNotesTitle: 'Nouveautés',
-  loadingText: 'Vérification des mises à jour...',
-  errorText: 'Impossible de vérifier les mises à jour',
-  upToDateText: 'Votre application est à jour !',
-);
-
-final appUpdater = AppUpdater.configure(
-  iosAppId: '123456789',
-  strings: frenchStrings,
-);
-```
+`AppUpdateController` publishes a stream of `UpdateState` values
+(`checking`, `available`, `downloading`, `readyToInstall`, `installing`,
+`installed`, `failed`) so a badge, a snackbar or a progress bar can follow it.
 
 ---
 
-## Custom Update Servers
+## 🛰️ Publish from any CI
 
-### Custom JSON Endpoint
+The flow is always the same:
 
-Host your own version endpoint:
+```
+build → write app-update.json → POST build metadata → PUT artifact → app updates
+```
+
+1. **Run the server** (once, anywhere):
+
+```bash
+docker run -d --name app-updater-ci \
+  -p 8080:8080 -v app_updater_data:/data \
+  -e APP_UPDATER_CI_TOKEN=change-me \
+  ghcr.io/ferelking242/app-updater-ci:latest
+```
+
+2. **Add one step to your CI.** The script works with any runner that has
+`bash`, `curl` and `python3`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ferelking242/app_updater/main/scripts/publish-build.sh -o publish-build.sh
+chmod +x publish-build.sh
+
+./publish-build.sh \
+  --endpoint https://updates.example.com \
+  --app my-app \
+  --file build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+  --version 1.4.2 \
+  --build-number "$GITHUB_RUN_NUMBER" \
+  --platform android \
+  --abi arm64-v8a \
+  --notes-file CHANGELOG.md \
+  --write-manifest
+```
+
+Ready-to-copy pipelines:
+
+| CI | File |
+|---|---|
+| GitHub Actions | [`ci/examples/github-actions.yml`](ci/examples/github-actions.yml) |
+| GitHub Actions (artifact only, no server) | [`ci/examples/github-artifacts-only.yml`](ci/examples/github-artifacts-only.yml) |
+| GitLab CI | [`ci/examples/gitlab-ci.yml`](ci/examples/gitlab-ci.yml) |
+| CircleCI | [`ci/examples/circleci.yml`](ci/examples/circleci.yml) |
+| Jenkins | [`ci/examples/Jenkinsfile`](ci/examples/Jenkinsfile) |
+| Reusable workflow | [`publish-app-updater.yml`](.github/workflows/publish-app-updater.yml) |
+
+3. **Nothing else.** The app polls
+`GET /v1/apps/my-app/latest?platform=android&channel=stable` and receives:
 
 ```json
 {
-  "version": "2.0.0",
-  "url": "https://example.com/download",
-  "releaseNotes": "- New feature X\n- Bug fix Y",
-  "minimumVersion": "1.5.0",
-  "urgency": "high",
-  "mandatory": false
+  "version": "1.4.2",
+  "buildNumber": 168,
+  "platform": "android",
+  "channel": "stable",
+  "releaseNotes": "Fixed the player crash",
+  "artifacts": [
+    {
+      "name": "app-arm64-v8a-release.apk",
+      "url": "/v1/apps/my-app/builds/9f2c/artifact",
+      "size": 42123456,
+      "sha256": "6f1c…",
+      "abi": "arm64-v8a"
+    }
+  ]
 }
 ```
 
-```dart
-final appUpdater = AppUpdater.configure(
-  customJsonUrl: 'https://example.com/version.json',
-);
-```
+Full contract, retention, private mode and troubleshooting:
+[docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md).
 
-### Custom XML Endpoint
+### GitHub Actions artifacts without a server
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<app>
-  <version>2.0.0</version>
-  <url>https://example.com/download</url>
-  <releaseNotes>New features and improvements</releaseNotes>
-  <minimumVersion>1.5.0</minimumVersion>
-  <urgency>high</urgency>
-  <mandatory>false</mandatory>
-</app>
-```
+Set no endpoint: `--write-manifest` writes `app-update.json` next to the build,
+`upload-artifact` stores both, and `GitHubArtifactsSource` reads them through
+the GitHub API. Private repositories work with a token
+(`githubToken: Platform.environment['GH_TOKEN']`).
 
-```dart
-final appUpdater = AppUpdater.configure(
-  customXmlUrl: 'https://example.com/version.xml',
-);
+### Configure releases
+
+Releases stay the stable channel. On the **app_updater** repository the
+[`Release`](.github/workflows/release.yml) workflow runs on every `v*` tag and:
+
+1. runs analyze and tests,
+2. validates `dart pub publish --dry-run`,
+3. attaches `app_updater-<version>.tar.gz` to the GitHub release,
+4. publishes the CI server image to GHCR.
+
+For your own app, tag the commit and let the publish workflow push the build:
+
+```bash
+git tag v1.4.2 && git push origin v1.4.2
 ```
 
 ---
 
-## Additional Methods
+## 🎨 Your app, your update UI
 
-### Check Without Dialog
-
-```dart
-final updateInfo = await appUpdater.checkForUpdate();
-
-print('Current: ${updateInfo.currentVersion}');
-print('Latest: ${updateInfo.latestVersion}');
-print('Update available: ${updateInfo.updateAvailable}');
-print('Store URL: ${updateInfo.updateUrl}');
-print('Release notes: ${updateInfo.releaseNotes}');
-print('Urgency: ${updateInfo.urgency}');
-print('Is mandatory: ${updateInfo.isMandatory}');
-print('Requires force update: ${updateInfo.requiresForceUpdate}');
-print('Update size: ${updateInfo.formattedUpdateSize}');
-```
-
-### Open Store
+Every app embedding `app_updater` can look different:
 
 ```dart
-// Open the appropriate store for the current platform
-await appUpdater.openStore();
-
-// Or use the convenience function
-await openAppStore(
-  iosAppId: '123456789',
-  microsoftProductId: '9NBLGGH4NNS1',
-);
-```
-
-### Callbacks
-
-```dart
-await appUpdater.checkAndShowUpdateDialog(
-  context,
-  onNoUpdate: () {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('App is up to date!')),
-    );
-  },
-  onUpdate: () {
-    print('User chose to update');
-  },
-  onCancel: () {
-    print('User cancelled');
-  },
-);
-```
-
-### Custom Dialog
-
-```dart
-await appUpdater.showUpdateDialog(
-  context,
-  customDialog: AlertDialog(
-    title: const Text('Custom Update Dialog'),
-    content: const Text('A new version is available!'),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Later'),
-      ),
-      FilledButton(
-        onPressed: () {
-          Navigator.pop(context);
-          appUpdater.openStore();
-        },
-        child: const Text('Update'),
-      ),
-    ],
+AppUpdater.configure(
+  theme: AppUpdaterTheme(
+    accentColor: const Color(0xFFFF6B35),
+    backgroundColor: const Color(0xFF0D1117),
+    surfaceColor: const Color(0xFF161B22),
+    foregroundColor: Colors.white,
+    borderRadius: BorderRadius.circular(24),
+    logo: Image.asset('assets/logo.png', height: 56),
+    strings: const UpdateStrings(
+      updateButton: 'Install now',
+      laterButton: 'Later',
+    ),
   ),
 );
 ```
 
----
+Need more than colors? Pass a builder and own the whole surface:
 
-## API Reference
+```dart
+theme: AppUpdaterTheme(
+  builder: (context, info, actions, theme) => MyUpdateSheet(
+    version: info.latestVersion!,
+    notes: info.releaseNotes,
+    progress: myProgress,
+    onInstall: actions.onUpdate,
+    onLater: actions.onLater,
+  ),
+),
+```
 
-### AppUpdater
-
-| Method | Description |
-|--------|-------------|
-| `AppUpdater.configure(...)` | Create instance with individual parameters |
-| `AppUpdater(config)` | Create instance with `AppUpdaterConfig` |
-| `checkForUpdate()` | Check for updates, returns `UpdateInfo` |
-| `showUpdateDialog(context, ...)` | Show update dialog |
-| `checkAndShowUpdateDialog(context, ...)` | Check and show dialog if update available |
-| `openStore()` | Open the appropriate app store |
-| `openTestFlight()` | Open TestFlight (iOS only) |
-| `getStoreUrl()` | Get store URL for current platform |
-| `getTestFlightUrl()` | Get TestFlight URL (iOS only) |
-| `startBackgroundChecking(interval)` | Start periodic background checks |
-| `stopBackgroundChecking()` | Stop background checks |
-| `performBackgroundCheck()` | Perform single background check |
-| `dispose()` | Clean up resources |
-
-### AppUpdaterConfig
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `iosAppId` | `String?` | iOS App Store app ID |
-| `macAppId` | `String?` | macOS App Store app ID |
-| `androidPackageName` | `String?` | Android package name (auto-detected) |
-| `microsoftProductId` | `String?` | Microsoft Store product ID |
-| `snapName` | `String?` | Snap Store package name |
-| `flathubAppId` | `String?` | Flathub app ID |
-| `customXmlUrl` | `String?` | Custom XML endpoint URL |
-| `customJsonUrl` | `String?` | Custom JSON endpoint URL |
-| `linuxStoreType` | `LinuxStoreType` | snap or flathub |
-| `githubOwner` | `String?` | GitHub repository owner |
-| `githubRepo` | `String?` | GitHub repository name |
-| `githubIncludePrereleases` | `bool` | Include prereleases (default: false) |
-| `githubToken` | `String?` | GitHub PAT for private repos |
-| `githubHeaders` | `Map<String, String>?` | Custom HTTP headers for GitHub API |
-| `testFlightEnabled` | `bool` | Enable TestFlight (default: false) |
-| `testFlightUrl` | `String?` | Custom TestFlight URL |
-| `firebaseRemoteConfigEnabled` | `bool` | Enable Firebase (default: false) |
-| `firebaseSettings` | `FirebaseRemoteConfigSettings?` | Firebase config keys |
-| `firebaseConfigFetcher` | `Function?` | Callback to fetch Firebase values |
-| `checkFrequency` | `Duration?` | Minimum time between checks |
-| `minimumVersion` | `String?` | Minimum required version |
-| `onAnalyticsEvent` | `Function?` | Analytics callback |
-| `strings` | `UpdateStrings` | Localized strings |
-
-### UpdateDialogStyle
-
-| Style | Platform | Description |
-|-------|----------|-------------|
-| `adaptive` | All | Auto-selects based on platform |
-| `material` | Android | Material Design 3 |
-| `cupertino` | iOS/macOS | Native Apple design |
-| `fluent` | Windows | Microsoft Fluent Design |
-| `adwaita` | Linux | GNOME/Adwaita style |
-
-### UpdateUrgency
-
-| Level | Description |
-|-------|-------------|
-| `low` | Minor improvements, can be skipped |
-| `medium` | Regular updates with new features |
-| `high` | Important updates, strongly recommended |
-| `critical` | Security fixes or breaking changes |
-
-### UpdateInfo
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `currentVersion` | `String` | Current app version |
-| `latestVersion` | `String?` | Latest available version |
-| `updateUrl` | `String?` | Store/download URL |
-| `updateAvailable` | `bool` | Whether update is available |
-| `releaseNotes` | `String?` | Release notes/changelog |
-| `urgency` | `UpdateUrgency` | Update urgency level |
-| `minimumVersion` | `String?` | Minimum required version |
-| `isMandatory` | `bool` | Whether update is mandatory |
-| `releaseDate` | `DateTime?` | Release date |
-| `updateSizeBytes` | `int?` | Update size in bytes |
-| `requiresForceUpdate` | `bool` | Whether force update is required |
-| `formattedUpdateSize` | `String?` | Human-readable size (e.g., "15.2 MB") |
-
-### UpdatePreferences
-
-| Method | Description |
-|--------|-------------|
-| `isVersionSkipped(version)` | Check if version is skipped |
-| `skipVersion(version)` | Skip a specific version |
-| `isDoNotAskAgain()` | Check "do not ask again" preference |
-| `setDoNotAskAgain(value)` | Set "do not ask again" preference |
-| `getLastCheckTime()` | Get last update check time |
-| `setLastCheckTime(time)` | Set last update check time |
-| `shouldCheckForUpdate(frequency)` | Check if enough time has passed |
-| `getUpdateImpressions()` | Get dialog impression count |
-| `getUpdateDismissals()` | Get dismissal count |
-| `clearAll()` | Clear all preferences |
-| `clearSkippedVersion()` | Clear skipped version only |
-
-### UpdateAnalyticsEvent
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `eventName` | `String` | Event name |
-| `currentVersion` | `String` | Current app version |
-| `latestVersion` | `String?` | Latest available version |
-| `urgency` | `UpdateUrgency?` | Update urgency |
-| `platform` | `String` | Platform name |
-| `timestamp` | `DateTime` | Event timestamp |
-| `toMap()` | `Map` | Convert to map for analytics |
-
-### UpdateStrings
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `updateAvailableTitle` | `String` | Dialog title |
-| `updateAvailableMessage` | `String` | Dialog message (supports placeholders) |
-| `updateButton` | `String` | Update button text |
-| `laterButton` | `String` | Later button text |
-| `skipVersionButton` | `String` | Skip version button text |
-| `doNotAskAgainButton` | `String` | Do not ask again button text |
-| `criticalUpdateTitle` | `String` | Critical update title |
-| `criticalUpdateMessage` | `String` | Critical update message |
-| `releaseNotesTitle` | `String` | Release notes section title |
-| `loadingText` | `String` | Loading text |
-| `errorText` | `String` | Error text |
-| `upToDateText` | `String` | Up to date text |
+See [docs/CUSTOM_UI.md](docs/CUSTOM_UI.md) for the full action list and a
+complete example.
 
 ---
 
-## Notes
+## 🔔 Auto-update and background install
 
-- Update dialogs won't work on iOS Simulator (no App Store)
-- Android package name is auto-detected if not provided
-- Custom endpoints take priority over store checks
-- Firebase Remote Config takes highest priority when enabled
-- GitHub releases are checked before platform stores
-- Private GitHub repos require `githubToken` or `githubHeaders` for authentication
-- Release notes are automatically fetched from supported sources
-- Background checking requires calling `dispose()` when done
+| Step | API |
+|---|---|
+| Enable the feature | `await controller.setAutoUpdateEnabled(true)` |
+| Check at startup | `await controller.checkOnLaunch()` |
+| Manual check | `await controller.check(manual: true)` |
+| Download | `await controller.download()` |
+| Install | `await controller.install()` |
+| Observe | `controller.states.listen(...)` |
 
-## Credits
+Your app owns the platform part: `UpdateNotifier` posts the notification with
+an **Install** button, `UpdateInstaller` runs the APK intent (or a silent
+installer such as Shizuku/Device Owner). The package decides *when* to act, the
+host decides *how*.
 
-- [url_launcher](https://pub.dev/packages/url_launcher)
-- [package_info_plus](https://pub.dev/packages/package_info_plus)
-- [shared_preferences](https://pub.dev/packages/shared_preferences)
+A complete Flutter integration — settings toggle, launch check, notification
+with an install action — lives in [docs/AUTO_UPDATE.md](docs/AUTO_UPDATE.md).
 
-## Author
+---
 
-- [Mantresh Khurana](https://github.com/mantreshkhurana)
+## 🖥️ Supported platforms
+
+| Platform | Stores | Direct builds |
+|---|---|---|
+| Android | Play Store | APK (release, artifact or CI feed) |
+| iOS | App Store, TestFlight | IPA (TrollStore / enterprise) |
+| macOS | Mac App Store | DMG, PKG |
+| Windows | Microsoft Store | EXE, MSIX |
+| Linux | Snap, Flathub | AppImage, DEB, RPM, tar.gz |
+
+---
+
+## 🛠️ Build locally
+
+```bash
+git clone https://github.com/ferelking242/app_updater.git
+cd app_updater
+
+flutter pub get
+flutter test
+flutter analyze
+
+cd ci/app_updater_ci
+dart pub get
+dart test
+dart run bin/server.dart --port 8080 --token dev
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create a branch (`git checkout -b feat/my-feature`).
+3. Run `dart format lib test` and the tests.
+4. Open a pull request describing the behaviour change.
+
+Bug reports and feature requests: [issues](https://github.com/ferelking242/app_updater/issues).
+
+---
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE). Original package by
+[mantreshkhurana](https://github.com/mantreshkhurana/app_updater)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for apps that ship often**
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:6366f1,50:0ea5e9,100:0d1117&height=80&section=footer" width="100%" alt="Footer"/>
+
+</div>

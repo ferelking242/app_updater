@@ -11,6 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xml/xml.dart' as xml;
 
+import 'ui/app_updater_theme.dart';
+import 'ui/update_dialog.dart';
+
 // =============================================================================
 // ENUMS
 // =============================================================================
@@ -801,6 +804,11 @@ class AppUpdaterConfig {
   /// Localized strings for dialogs
   final UpdateStrings strings;
 
+  /// Per-app visual identity for the built-in update dialog.
+  ///
+  /// Set [AppUpdaterTheme.builder] for a fully custom widget.
+  final AppUpdaterTheme? theme;
+
   /// Creates an AppUpdater configuration with the specified options.
   const AppUpdaterConfig({
     this.iosAppId,
@@ -826,6 +834,7 @@ class AppUpdaterConfig {
     this.minimumVersion,
     this.onAnalyticsEvent,
     this.strings = const UpdateStrings(),
+    this.theme,
   });
 
   /// Creates a copy of this config with the given fields replaced.
@@ -853,6 +862,7 @@ class AppUpdaterConfig {
     String? minimumVersion,
     void Function(UpdateAnalyticsEvent event)? onAnalyticsEvent,
     UpdateStrings? strings,
+    AppUpdaterTheme? theme,
   }) {
     return AppUpdaterConfig(
       iosAppId: iosAppId ?? this.iosAppId,
@@ -880,6 +890,7 @@ class AppUpdaterConfig {
       minimumVersion: minimumVersion ?? this.minimumVersion,
       onAnalyticsEvent: onAnalyticsEvent ?? this.onAnalyticsEvent,
       strings: strings ?? this.strings,
+      theme: theme ?? this.theme,
     );
   }
 }
@@ -992,6 +1003,7 @@ class AppUpdater {
     String? minimumVersion,
     void Function(UpdateAnalyticsEvent event)? onAnalyticsEvent,
     UpdateStrings strings = const UpdateStrings(),
+    AppUpdaterTheme? theme,
   }) {
     return AppUpdater(AppUpdaterConfig(
       iosAppId: iosAppId,
@@ -1017,6 +1029,7 @@ class AppUpdater {
       minimumVersion: minimumVersion,
       onAnalyticsEvent: onAnalyticsEvent,
       strings: strings,
+      theme: theme,
     ));
   }
 
@@ -2541,81 +2554,103 @@ class AppUpdater {
         ? _getAdaptiveStyle(context)
         : dialogStyle;
 
-    Widget dialog;
-    switch (style) {
-      case UpdateDialogStyle.cupertino:
-        dialog = _buildCupertinoDialog(
-          context,
-          updateInfo: info,
-          title: title ?? defaultTitle,
-          message: message ?? defaultMessage,
-          cancelText: cancelText ?? strings.laterButton,
-          updateText: updateText ?? strings.updateButton,
-          showSkipVersion: showSkipVersion && !info.isMandatory,
-          showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
-          showReleaseNotes: showReleaseNotes,
-          isPersistent: shouldBePersistent,
-          onCancel: handleCancel,
-          onUpdate: handleUpdate,
-          onSkipVersion: handleSkipVersion,
-          onDoNotAskAgain: handleDoNotAskAgain,
-        );
-        break;
-      case UpdateDialogStyle.fluent:
-        dialog = _buildFluentDialog(
-          context,
-          updateInfo: info,
-          title: title ?? defaultTitle,
-          message: message ?? defaultMessage,
-          cancelText: cancelText ?? strings.laterButton,
-          updateText: updateText ?? strings.updateButton,
-          showSkipVersion: showSkipVersion && !info.isMandatory,
-          showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
-          showReleaseNotes: showReleaseNotes,
-          isPersistent: shouldBePersistent,
-          onCancel: handleCancel,
-          onUpdate: handleUpdate,
-          onSkipVersion: handleSkipVersion,
-          onDoNotAskAgain: handleDoNotAskAgain,
-        );
-        break;
-      case UpdateDialogStyle.adwaita:
-        dialog = _buildAdwaitaDialog(
-          context,
-          updateInfo: info,
-          title: title ?? defaultTitle,
-          message: message ?? defaultMessage,
-          cancelText: cancelText ?? strings.laterButton,
-          updateText: updateText ?? strings.updateButton,
-          showSkipVersion: showSkipVersion && !info.isMandatory,
-          showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
-          showReleaseNotes: showReleaseNotes,
-          isPersistent: shouldBePersistent,
-          onCancel: handleCancel,
-          onUpdate: handleUpdate,
-          onSkipVersion: handleSkipVersion,
-          onDoNotAskAgain: handleDoNotAskAgain,
-        );
-        break;
-      case UpdateDialogStyle.material:
-      case UpdateDialogStyle.adaptive:
-        dialog = _buildMaterialDialog(
-          context,
-          updateInfo: info,
-          title: title ?? defaultTitle,
-          message: message ?? defaultMessage,
-          cancelText: cancelText ?? strings.laterButton,
-          updateText: updateText ?? strings.updateButton,
-          showSkipVersion: showSkipVersion && !info.isMandatory,
-          showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
-          showReleaseNotes: showReleaseNotes,
-          isPersistent: shouldBePersistent,
-          onCancel: handleCancel,
-          onUpdate: handleUpdate,
-          onSkipVersion: handleSkipVersion,
-          onDoNotAskAgain: handleDoNotAskAgain,
-        );
-        break;
+    late Widget dialog;
+    final theme = config.theme;
+    if (theme != null) {
+      dialog = AppUpdaterUpdateDialog(
+        theme: theme,
+        info: info,
+        title: title ?? defaultTitle,
+        message: message ?? defaultMessage,
+        updateText: updateText ?? strings.updateButton,
+        laterText: cancelText ?? strings.laterButton,
+        skipVersionText: strings.skipVersionButton,
+        doNotAskAgainText: strings.doNotAskAgainButton,
+        releaseNotesTitle: strings.releaseNotesTitle,
+        isPersistent: shouldBePersistent,
+        onUpdate: handleUpdate,
+        onLater: handleCancel,
+        onSkipVersion: showSkipVersion && !info.isMandatory ? handleSkipVersion : null,
+        onDoNotAskAgain:
+            showDoNotAskAgain && !info.isMandatory ? handleDoNotAskAgain : null,
+      );
+    } else {
+      switch (style) {
+        case UpdateDialogStyle.cupertino:
+          dialog = _buildCupertinoDialog(
+            context,
+            updateInfo: info,
+            title: title ?? defaultTitle,
+            message: message ?? defaultMessage,
+            cancelText: cancelText ?? strings.laterButton,
+            updateText: updateText ?? strings.updateButton,
+            showSkipVersion: showSkipVersion && !info.isMandatory,
+            showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
+            showReleaseNotes: showReleaseNotes,
+            isPersistent: shouldBePersistent,
+            onCancel: handleCancel,
+            onUpdate: handleUpdate,
+            onSkipVersion: handleSkipVersion,
+            onDoNotAskAgain: handleDoNotAskAgain,
+          );
+          break;
+        case UpdateDialogStyle.fluent:
+          dialog = _buildFluentDialog(
+            context,
+            updateInfo: info,
+            title: title ?? defaultTitle,
+            message: message ?? defaultMessage,
+            cancelText: cancelText ?? strings.laterButton,
+            updateText: updateText ?? strings.updateButton,
+            showSkipVersion: showSkipVersion && !info.isMandatory,
+            showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
+            showReleaseNotes: showReleaseNotes,
+            isPersistent: shouldBePersistent,
+            onCancel: handleCancel,
+            onUpdate: handleUpdate,
+            onSkipVersion: handleSkipVersion,
+            onDoNotAskAgain: handleDoNotAskAgain,
+          );
+          break;
+        case UpdateDialogStyle.adwaita:
+          dialog = _buildAdwaitaDialog(
+            context,
+            updateInfo: info,
+            title: title ?? defaultTitle,
+            message: message ?? defaultMessage,
+            cancelText: cancelText ?? strings.laterButton,
+            updateText: updateText ?? strings.updateButton,
+            showSkipVersion: showSkipVersion && !info.isMandatory,
+            showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
+            showReleaseNotes: showReleaseNotes,
+            isPersistent: shouldBePersistent,
+            onCancel: handleCancel,
+            onUpdate: handleUpdate,
+            onSkipVersion: handleSkipVersion,
+            onDoNotAskAgain: handleDoNotAskAgain,
+          );
+          break;
+        case UpdateDialogStyle.material:
+        case UpdateDialogStyle.adaptive:
+          dialog = _buildMaterialDialog(
+            context,
+            updateInfo: info,
+            title: title ?? defaultTitle,
+            message: message ?? defaultMessage,
+            cancelText: cancelText ?? strings.laterButton,
+            updateText: updateText ?? strings.updateButton,
+            showSkipVersion: showSkipVersion && !info.isMandatory,
+            showDoNotAskAgain: showDoNotAskAgain && !info.isMandatory,
+            showReleaseNotes: showReleaseNotes,
+            isPersistent: shouldBePersistent,
+            onCancel: handleCancel,
+            onUpdate: handleUpdate,
+            onSkipVersion: handleSkipVersion,
+            onDoNotAskAgain: handleDoNotAskAgain,
+          );
+          break;
+      }
+
     }
 
     // Wrap with PopScope for persistent dialogs

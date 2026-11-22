@@ -1,19 +1,21 @@
 name: app_updater
-description: A comprehensive Flutter package to check for app updates and display platform-native dialogs. Supports iOS, Android, macOS, Windows, and Linux with release notes, analytics, GitHub releases, Firebase Remote Config, localization, and more.
-version: 2.1.0
-homepage: https://github.com/mantreshkhurana/app_updater
-repository: https://github.com/mantreshkhurana/app_updater
-issue_tracker: https://github.com/mantreshkhurana/app_updater/issues
+description: Check for app updates from stores, GitHub Releases, GitHub Actions artifacts or a self-hosted CI feed, then show a native or fully custom update UI with optional auto-update and background install.
+version: 3.0.0
+homepage: https://github.com/ferelking242/app_updater
+repository: https://github.com/ferelking242/app_updater
+issue_tracker: https://github.com/ferelking242/app_updater/issues
 
 topics:
   - app-update
   - version-checker
   - update-dialog
   - store-version
+  - auto-update
+  - ci-artifacts
 
 environment:
   sdk: ^3.5.0
-  flutter: ">=3.22.0"
+  flutter: ">=3.27.0"
 
 dependencies:
   flutter:
@@ -24,6 +26,10 @@ dependencies:
   package_info_plus: ^9.0.0
   xml: ^6.6.1
   shared_preferences: ^2.5.4
+  archive: ^4.0.9
+  crypto: ^3.0.7
+  path: ^1.9.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
