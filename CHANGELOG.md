@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.1.0
+
+### Features
+
+- **Resumable downloads**: `ArtifactDownloader.download` keeps the `.part`
+  file on interruption and resumes with a `Range` request on the next attempt
+  (falling back to a clean restart when the server ignores the range). Progress
+  starts at the resumed offset instead of 0 %.
+- **Rolling releases**: `GitHubReleasesSource` reads the version from the asset
+  name when the tag carries none (`android-latest`, `nightly`, ...).
+
 ## 3.0.1
 
 ### Fixes

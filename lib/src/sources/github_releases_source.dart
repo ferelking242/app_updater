@@ -58,13 +58,17 @@ class GitHubReleasesSource extends UpdateSource {
         if (release['prerelease'] == true && !includePrereleases) continue;
 
         final tag = release['tag_name']?.toString() ?? '';
-        final version = VersionUtils.normalize(tag);
-        if (version == null) continue;
 
         final assets = ((release['assets'] as List?) ?? const [])
             .whereType<Map>()
             .map((asset) => asset.cast<String, dynamic>())
             .toList(growable: false);
+
+        // Rolling releases are tagged `android-latest`, `nightly`, ... and
+        // carry the version in the asset name instead.
+        final version =
+            VersionUtils.normalize(tag) ?? _versionFromAssets(assets);
+        if (version == null) continue;
         final artifacts = assets
             .map(
               (asset) => UpdateArtifact(
@@ -95,8 +99,7 @@ class GitHubReleasesSource extends UpdateSource {
             'tag': tag,
           },
         );
-        if (best == null ||
-            VersionUtils.compare(version, best.version) > 0) {
+        if (best == null || VersionUtils.compare(version, best.version) > 0) {
           best = candidate;
         }
       }
@@ -104,6 +107,15 @@ class GitHubReleasesSource extends UpdateSource {
     } finally {
       if (client == null) httpClient.close();
     }
+  }
+
+  /// Version carried by an asset name (`Watchtower-8.1.914-arm64.apk`).
+  static String? _versionFromAssets(List<Map<String, dynamic>> assets) {
+    for (final asset in assets) {
+      final version = VersionUtils.normalize(asset['name']?.toString());
+      if (version != null) return version;
+    }
+    return null;
   }
 
   Map<String, String> _headers() => <String, String>{

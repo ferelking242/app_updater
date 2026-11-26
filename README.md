@@ -61,7 +61,7 @@ This fork adds what the original package could not do:
   <tr>
     <td align="center">
       <b>⚡ Auto-update</b><br/>
-      <sub>Launch check, background download, install action</sub>
+      <sub>Launch check, resumable download, install action</sub>
     </td>
     <td align="center">
       <b>🔐 Integrity</b><br/>

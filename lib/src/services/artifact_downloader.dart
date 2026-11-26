@@ -24,22 +24,59 @@ class ArtifactDownloader {
 
   /// Streams [url] into [destination] and verifies [expectedSha256].
   ///
-  /// The partial file is removed when the transfer or the checksum fails, so a
-  /// retry never installs a truncated build.
+  /// An interrupted transfer leaves `<destination>.part` behind and the next
+  /// call resumes from its length with a `Range` request, so a 50 MB APK on a
+  /// flaky network does not start over. The partial file is dropped when the
+  /// checksum fails, so a retry never installs a truncated build.
   Future<File> download(
     Uri url, {
     required File destination,
     Map<String, String>? headers,
     DownloadProgressCallback? onProgress,
     String? expectedSha256,
+    bool resume = true,
   }) async {
     await destination.parent.create(recursive: true);
     final partial = File('${destination.path}.part');
-    if (await partial.exists()) await partial.delete();
+    var have = 0;
+    if (resume && await partial.exists()) {
+      have = await partial.length();
+    }
+    if (have > 0 && await destination.exists()) {
+      // A previous run already finished: nothing to fetch.
+      final digest = await sha256Of(destination);
+      if (expectedSha256 == null ||
+          expectedSha256.isEmpty ||
+          digest.toLowerCase() == expectedSha256.toLowerCase()) {
+        final size = await destination.length();
+        onProgress?.call(size, size);
+        return destination;
+      }
+      await destination.delete();
+    }
+    if (have > 0 && have == await _remoteLength(url, headers)) {
+      // The server answers with the same length: the partial is complete.
+      await partial.rename(destination.path);
+      onProgress?.call(have, have);
+      return destination;
+    }
 
-    final request = http.Request('GET', url);
-    if (headers != null) request.headers.addAll(headers);
-    final response = await _client.send(request);
+    Future<http.StreamedResponse> send() {
+      final request = http.Request('GET', url);
+      if (headers != null) request.headers.addAll(headers);
+      if (have > 0) request.headers['Range'] = 'bytes=$have-';
+      return _client.send(request);
+    }
+
+    var response = await send();
+    if (have > 0 &&
+        (response.statusCode == 200 || response.statusCode == 416)) {
+      // The range was ignored (or the partial is stale): start over cleanly.
+      await response.stream.drain<void>();
+      if (await partial.exists()) await partial.delete();
+      have = 0;
+      response = await send();
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       await response.stream.drain<void>();
@@ -49,11 +86,24 @@ class ArtifactDownloader {
       );
     }
 
-    final total = response.contentLength ?? -1;
-    var received = 0;
-    final sink = partial.openWrite();
+    final resumed = response.statusCode == 206 && have > 0;
+    if (!resumed && have > 0) have = 0;
+    final total = response.contentLength == null
+        ? -1
+        : response.contentLength! + (resumed ? have : 0);
+    var received = have;
+    if (have > 0) onProgress?.call(have, total);
+
     final digestSink = _DigestSink();
     final hasher = sha256.startChunkedConversion(digestSink);
+    if (have > 0) {
+      await for (final chunk in partial.openRead()) {
+        hasher.add(chunk);
+      }
+    }
+    final sink = partial.openWrite(
+      mode: have > 0 ? FileMode.append : FileMode.write,
+    );
     try {
       await for (final chunk in response.stream) {
         sink.add(chunk);
@@ -66,7 +116,7 @@ class ArtifactDownloader {
       hasher.close();
     } catch (_) {
       await sink.close();
-      if (await partial.exists()) await partial.delete();
+      // Keep the partial file: the next attempt resumes from it.
       rethrow;
     }
 
@@ -83,6 +133,20 @@ class ArtifactDownloader {
 
     if (await destination.exists()) await destination.delete();
     return partial.rename(destination.path);
+  }
+
+  /// Size announced by the server, or -1 when it is unknown.
+  Future<int> _remoteLength(Uri url, Map<String, String>? headers) async {
+    try {
+      final request = http.Request('HEAD', url);
+      if (headers != null) request.headers.addAll(headers);
+      final response = await _client.send(request);
+      await response.stream.drain<void>();
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.contentLength ?? -1;
+      }
+    } catch (_) {}
+    return -1;
   }
 
   /// Extracts [archiveFile] into [target] and returns every extracted file.
