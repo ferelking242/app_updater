@@ -18,6 +18,12 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      # `flutter analyze` walks the nested packages too, so their own
+      # dependencies must be resolved first.
+      - name: Install nested package dependencies
+        run: |
+          (cd example && flutter pub get)
+          (cd ci/app_updater_ci && dart pub get)
       - name: Analyze
         run: flutter analyze --no-fatal-infos
       - name: Test
