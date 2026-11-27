@@ -59,12 +59,13 @@ class UpdateState {
     double? progress,
     Object? error,
     bool clearError = false,
+    bool clearPrepared = false,
   }) {
     return UpdateState(
       phase: phase ?? this.phase,
       info: info ?? this.info,
       candidate: candidate ?? this.candidate,
-      prepared: prepared ?? this.prepared,
+      prepared: clearPrepared ? null : prepared ?? this.prepared,
       progress: progress ?? this.progress,
       error: clearError ? null : error ?? this.error,
     );
@@ -81,7 +82,7 @@ class AutoUpdateOptions {
   const AutoUpdateOptions({
     this.enabledByDefault = false,
     this.interval = const Duration(hours: 6),
-    this.downloadOnLaunch = true,
+    this.downloadOnLaunch = false,
     this.installWhenReady = false,
     this.notifyWhenUpToDate = false,
     this.channel = 'stable',
@@ -95,6 +96,10 @@ class AutoUpdateOptions {
   final Duration interval;
 
   /// Download the build right after an automatic check finds one.
+  ///
+  /// Off by default: a background download of ~50 MB without the user asking
+  /// is surprising, and on a metered connection it is hostile. Keep it off and
+  /// let the notifier offer an explicit "Download" action instead.
   final bool downloadOnLaunch;
 
   /// Install without user interaction when the platform allows it (silent
@@ -186,11 +191,13 @@ class AppUpdateController {
     this.options = const AutoUpdateOptions(),
     this.preferencesPrefix = 'app_updater',
     Directory? workDir,
+    Future<Directory> Function()? workDirProvider,
     Future<String> Function()? currentVersionProvider,
     Future<int?> Function()? currentBuildNumberProvider,
   })  : _notifier = notifier,
         _installer = installer,
         _workDir = workDir,
+        _workDirProvider = workDirProvider,
         _currentVersionProvider = currentVersionProvider,
         _currentBuildNumberProvider = currentBuildNumberProvider;
 
@@ -200,6 +207,10 @@ class AppUpdateController {
   final UpdateNotifier _notifier;
   final UpdateInstaller? _installer;
   final Directory? _workDir;
+
+  /// Resolved on every download, so the host app can pick a directory that
+  /// depends on a runtime permission (shared storage vs. app-scoped folder).
+  final Future<Directory> Function()? _workDirProvider;
   final Future<String> Function()? _currentVersionProvider;
   final Future<int?> Function()? _currentBuildNumberProvider;
 
@@ -294,14 +305,28 @@ class AppUpdateController {
         );
       }
 
+      // A build downloaded earlier survives app restarts: re-checking must not
+      // send the user back to "Download" when the APK is already on disk.
+      final pending = await pendingUpdate();
+      final resumable = pending != null &&
+          VersionUtils.compare(pending.version, candidate.version) >= 0;
       final state = UpdateState(
-        phase: UpdatePhase.available,
+        phase: resumable ? UpdatePhase.readyToInstall : UpdatePhase.available,
         info: info,
         candidate: candidate,
+        prepared: resumable ? pending : null,
+        progress: resumable ? 1 : null,
       );
+      if (!resumable && pending != null) {
+        await clearPrepared();
+      }
       _emit(state);
       if (manual || await _shouldNotify(candidate.version, force: force)) {
-        await _notifier.showUpdateAvailable(state);
+        if (resumable) {
+          await _notifier.showReadyToInstall(state);
+        } else {
+          await _notifier.showUpdateAvailable(state);
+        }
         await _markNotified(candidate.version);
       }
       return state;
@@ -350,6 +375,7 @@ class AppUpdateController {
         prepared: prepared,
         progress: 1,
       );
+      await _savePrepared(prepared);
       _emit(ready);
       await _notifier.showReadyToInstall(ready);
 
@@ -366,12 +392,16 @@ class AppUpdateController {
   }
 
   /// Installs the downloaded build.
+  ///
+  /// Works after a restart too: when the state has no [PreparedUpdate] in
+  /// memory, the one saved by [download] is read back from disk.
   Future<bool> install() async {
-    final prepared = _state.prepared;
     final installer = _installer;
-    if (prepared == null || installer == null) return false;
+    if (installer == null) return false;
+    final prepared = _state.prepared ?? await pendingUpdate();
+    if (prepared == null) return false;
 
-    _emit(_state.copyWith(phase: UpdatePhase.installing));
+    _emit(_state.copyWith(phase: UpdatePhase.installing, prepared: prepared));
     try {
       final started = await installer.install(prepared);
       _emit(
@@ -379,11 +409,73 @@ class AppUpdateController {
           phase: started ? UpdatePhase.installed : UpdatePhase.readyToInstall,
         ),
       );
-      if (started) await _notifier.cancel();
+      if (started) {
+        await clearPrepared();
+        await _notifier.cancel();
+      }
       return started;
     } catch (error) {
       _emit(_state.copyWith(phase: UpdatePhase.failed, error: error));
       return false;
+    }
+  }
+
+  /// Build downloaded by [download] and not installed yet, if the file is
+  /// still on disk. Null when there is nothing pending.
+  Future<PreparedUpdate?> pendingUpdate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final path = prefs.getString('${preferencesPrefix}_prepared_path');
+    final version = prefs.getString('${preferencesPrefix}_prepared_version');
+    if (path == null || path.isEmpty || version == null || version.isEmpty) {
+      return null;
+    }
+    final file = File(path);
+    if (!await file.exists()) {
+      await clearPrepared();
+      return null;
+    }
+    return PreparedUpdate(
+      file: file,
+      version: version,
+      releaseNotes: prefs.getString('${preferencesPrefix}_prepared_notes'),
+      sha256: prefs.getString('${preferencesPrefix}_prepared_sha256'),
+    );
+  }
+
+  /// Forgets the downloaded build (the file itself is kept).
+  Future<void> clearPrepared() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in const [
+      'prepared_path',
+      'prepared_version',
+      'prepared_sha256',
+      'prepared_notes',
+    ]) {
+      await prefs.remove('${preferencesPrefix}_$key');
+    }
+  }
+
+  Future<void> _savePrepared(PreparedUpdate prepared) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      '${preferencesPrefix}_prepared_path',
+      prepared.file.path,
+    );
+    await prefs.setString(
+      '${preferencesPrefix}_prepared_version',
+      prepared.version,
+    );
+    final sha = prepared.sha256;
+    if (sha == null || sha.isEmpty) {
+      await prefs.remove('${preferencesPrefix}_prepared_sha256');
+    } else {
+      await prefs.setString('${preferencesPrefix}_prepared_sha256', sha);
+    }
+    final notes = prepared.releaseNotes;
+    if (notes == null || notes.isEmpty) {
+      await prefs.remove('${preferencesPrefix}_prepared_notes');
+    } else {
+      await prefs.setString('${preferencesPrefix}_prepared_notes', notes);
     }
   }
 
@@ -499,8 +591,15 @@ class AppUpdateController {
   }
 
   Future<Directory> _resolveWorkDir() async {
-    final base = _workDir ??
-        Directory('${(await getTemporaryDirectory()).path}/app_updater');
+    final provider = _workDirProvider;
+    final Directory base;
+    if (provider != null) {
+      base = await provider();
+    } else if (_workDir != null) {
+      base = _workDir;
+    } else {
+      base = Directory('${(await getTemporaryDirectory()).path}/app_updater');
+    }
     await base.create(recursive: true);
     return base;
   }

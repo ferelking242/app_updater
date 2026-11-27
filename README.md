@@ -164,7 +164,7 @@ final controller = AppUpdateController(
   options: const AutoUpdateOptions(
     enabledByDefault: true,
     interval: Duration(hours: 6),
-    downloadOnLaunch: true,
+    downloadOnLaunch: false, // the notifier offers an explicit Download action
     abi: 'arm64-v8a',
   ),
 );

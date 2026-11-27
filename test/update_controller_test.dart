@@ -256,12 +256,85 @@ void main() {
     await controller.setAutoUpdateEnabled(true);
     await controller.checkOnLaunch();
     expect(source.fetchCount, 1);
-    expect(controller.state.phase, UpdatePhase.readyToInstall);
+    expect(
+      controller.state.phase,
+      UpdatePhase.available,
+      reason: 'a launch check announces the build, it never downloads it',
+    );
+    expect(controller.state.prepared, isNull);
 
     await controller.checkOnLaunch();
     expect(source.fetchCount, 1, reason: 'interval not elapsed yet');
 
     await controller.dispose();
+  });
+
+  test('downloadOnLaunch downloads when the host opts in', () async {
+    final controller = build(
+      _FakeSource(candidate),
+      options: const AutoUpdateOptions(downloadOnLaunch: true),
+    );
+    await controller.setAutoUpdateEnabled(true);
+
+    await controller.checkOnLaunch();
+
+    expect(controller.state.phase, UpdatePhase.readyToInstall);
+    expect(controller.state.prepared, isNotNull);
+  });
+
+  test('a downloaded build survives a new check and a restart', () async {
+    final installer = _RecordingInstaller();
+    final first = build(_FakeSource(candidate), installer: installer);
+    await first.check();
+    await first.download();
+    expect(first.state.phase, UpdatePhase.readyToInstall);
+
+    // Same prefs, fresh controller: the app was restarted.
+    final second = build(_FakeSource(candidate), installer: installer);
+    final state = await second.check();
+
+    expect(state.phase, UpdatePhase.readyToInstall);
+    expect(state.prepared, isNotNull);
+    expect(state.prepared!.version, '1.2.0');
+    expect(state.prepared!.file.existsSync(), isTrue);
+
+    expect(await second.install(), isTrue);
+    expect(installer.installCount, 1);
+    expect(await second.pendingUpdate(), isNull);
+  });
+
+  test('a stale downloaded build is dropped on check', () async {
+    final first = build(_FakeSource(candidate));
+    await first.check();
+    await first.download();
+
+    final newer = _FakeSource(
+      const UpdateCandidate(
+        version: '1.3.0',
+        platform: UpdatePlatform.android,
+        artifacts: [
+          UpdateArtifact(
+            fileName: 'app-arm64-v8a.apk',
+            url: 'https://example.com/app.apk',
+          ),
+        ],
+      ),
+    );
+    final second = build(newer);
+    final state = await second.check();
+
+    expect(state.phase, UpdatePhase.available);
+    expect(state.prepared, isNull);
+    expect(await second.pendingUpdate(), isNull);
+  });
+
+  test('install without any downloaded build is a no-op', () async {
+    final installer = _RecordingInstaller();
+    final controller = build(_FakeSource(candidate), installer: installer);
+    await controller.check();
+
+    expect(await controller.install(), isFalse);
+    expect(installer.installCount, 0);
   });
 
   test('does not repeat the same notification across restarts', () async {

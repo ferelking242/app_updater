@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.2.0
+
+### Features
+
+- **Downloaded builds are remembered**: `download` stores the prepared file in
+  the app preferences, `pendingUpdate()` reads it back and `install()` falls
+  back to it. Re-checking after a download (or restarting the app) now keeps
+  the state at `readyToInstall` instead of offering the download again.
+- **Custom download directory**: `AppUpdateController(workDirProvider: ...)`
+  resolves the folder on every download, so the host app can use a shared,
+  user-visible directory when the storage permission is granted and fall back
+  to an app-scoped one otherwise.
+
+### Fixes
+
+- **No silent background download**: `AutoUpdateOptions.downloadOnLaunch` now
+  defaults to `false`. A launch check announces the build through
+  `UpdateNotifier.showUpdateAvailable`, and the download only starts when the
+  user accepts it (in the app or from a notification action).
+
 ## 3.1.0
 
 ### Features

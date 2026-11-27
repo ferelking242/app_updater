@@ -26,7 +26,7 @@ void initState() {
     options: const AutoUpdateOptions(
       enabledByDefault: false,
       interval: Duration(hours: 6),
-      downloadOnLaunch: true,
+      downloadOnLaunch: false, // the notifier offers an explicit Download action
       installWhenReady: false,
       abi: 'arm64-v8a',
     ),
@@ -39,7 +39,15 @@ void initState() {
 ```
 
 `checkOnLaunch` does nothing when the user disabled auto-update, and skips the
-network when the last automatic check is younger than `interval`.
+network when the last automatic check is younger than `interval`. It announces
+the build through `UpdateNotifier.showUpdateAvailable`; nothing is downloaded
+unless `downloadOnLaunch` is explicitly enabled or the user accepts the update.
+
+The download folder comes from `workDir` or, when it has to be resolved at
+runtime, from `workDirProvider`. A build downloaded earlier is remembered:
+`pendingUpdate()` returns it, `install()` falls back to it after a restart, and
+the next check keeps the state at `readyToInstall` instead of offering the
+download again. `clearPrepared()` forgets it (the file stays on disk).
 
 ---
 
