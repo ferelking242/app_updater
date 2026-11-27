@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.2.1
+
+- `clearPrepared(deleteFile: true)` removes the APK too, and a check that finds
+  a newer build than the downloaded one now deletes the stale file instead of
+  leaving it in the update folder forever.
+
 ## 3.2.0
 
 ### Features

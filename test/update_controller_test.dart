@@ -307,6 +307,7 @@ void main() {
     final first = build(_FakeSource(candidate));
     await first.check();
     await first.download();
+    final staleApk = first.state.prepared!.file;
 
     final newer = _FakeSource(
       const UpdateCandidate(
@@ -326,6 +327,7 @@ void main() {
     expect(state.phase, UpdatePhase.available);
     expect(state.prepared, isNull);
     expect(await second.pendingUpdate(), isNull);
+    expect(staleApk.existsSync(), isFalse, reason: 'stale APK is removed');
   });
 
   test('install without any downloaded build is a no-op', () async {

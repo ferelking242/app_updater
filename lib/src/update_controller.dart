@@ -318,7 +318,8 @@ class AppUpdateController {
         progress: resumable ? 1 : null,
       );
       if (!resumable && pending != null) {
-        await clearPrepared();
+        // A newer build superseded it: drop the marker and the stale APK.
+        await clearPrepared(deleteFile: true);
       }
       _emit(state);
       if (manual || await _shouldNotify(candidate.version, force: force)) {
@@ -442,8 +443,23 @@ class AppUpdateController {
     );
   }
 
-  /// Forgets the downloaded build (the file itself is kept).
-  Future<void> clearPrepared() async {
+  /// Forgets the downloaded build.
+  ///
+  /// The file is kept by default so a caller can still hand it to the system
+  /// installer; pass [deleteFile] to remove it as well.
+  Future<void> clearPrepared({bool deleteFile = false}) async {
+    if (deleteFile) {
+      final prefs = await SharedPreferences.getInstance();
+      final path = prefs.getString('${preferencesPrefix}_prepared_path');
+      if (path != null && path.isNotEmpty) {
+        try {
+          final file = File(path);
+          if (await file.exists()) await file.delete();
+        } catch (_) {
+          // Best effort: the marker below is what matters.
+        }
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     for (final key in const [
       'prepared_path',
